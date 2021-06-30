@@ -1,10 +1,15 @@
+﻿// TODO 
+// - Start neues Pathfinding
+// - MoveAlongPath �berarbeiten
+// - evtl. abgeschlossen R�ume (wenn aStar keine Route)
+
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
 
 #define LAB_Y 9
 #define LAB_X 27
-#define START_POS_X 16
+#define START_POS_X 24
 #define START_POS_Y	3
 
 struct Pos
@@ -14,8 +19,15 @@ struct Pos
 	int Steps;
 };
 
-char lab[LAB_Y][LAB_X] ={{ '#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#', },
-     { '#',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
+struct Node
+{
+	char parent;
+	int visited;
+	int distance;
+};
+
+char lab[LAB_Y][LAB_X] = { { '#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#', },
+	 { '#',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ',' ','#', },
 	 { '#','#',' ',' ','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#','#','#',' ',' ',' ',' ',' ',' ','#', },
@@ -23,16 +35,19 @@ char lab[LAB_Y][LAB_X] ={{ '#','#','#','#','#','#','#','#','#','#','#','#','#','
 	 { '#',' ',' ','#','#','#','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ','#', },
 	 { '#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#', } };
+
+
 char brainMap[LAB_Y][LAB_X];
 char brain[LAB_Y][LAB_X];
 char generalDir;
 struct Pos Player;
+struct Node map[LAB_Y][LAB_X];
 
 char startDirection()				//stellt fest, in welchem Quadranten sich der Spieler befindet und in welcher Bewegungsrichtung die Wand am schnellsten erreicht werden kann
 {
-	if (Player.X >= LAB_X/2 && Player.Y >= LAB_Y/2)			//quadrant unten rechts
+	if (Player.X >= LAB_X / 2 && Player.Y >= LAB_Y / 2)			//quadrant unten rechts
 	{
-		if(LAB_X - Player.X < LAB_Y - Player.Y)
+		if (LAB_X - Player.X < LAB_Y - Player.Y)
 		{
 			return 'r';
 		}
@@ -49,7 +64,8 @@ char startDirection()				//stellt fest, in welchem Quadranten sich der Spieler b
 		else {
 			return 'u';
 		}
-	}else if (Player.X < LAB_X / 2 && Player.Y >= LAB_Y / 2)		//Quadrant unten links
+	}
+	else if (Player.X < LAB_X / 2 && Player.Y >= LAB_Y / 2)		//Quadrant unten links
 	{
 		if (Player.X < LAB_Y - Player.Y)
 		{
@@ -58,7 +74,8 @@ char startDirection()				//stellt fest, in welchem Quadranten sich der Spieler b
 		else {
 			return 'd';
 		}
-	}else if (Player.X < LAB_X / 2 && Player.Y < LAB_Y / 2)		//Quadrant oben links
+	}
+	else if (Player.X < LAB_X / 2 && Player.Y < LAB_Y / 2)		//Quadrant oben links
 	{
 		if (Player.X < Player.Y)
 		{
@@ -71,7 +88,7 @@ char startDirection()				//stellt fest, in welchem Quadranten sich der Spieler b
 	return 0;
 }
 
-char findDirection(){
+char findDirection() {
 	if (brainMap[Player.Y][Player.X + 1] == '#')
 		return 'd';
 	if (brainMap[Player.Y][Player.X - 1] == '#')
@@ -84,8 +101,8 @@ char findDirection(){
 }
 
 void waitFor(unsigned int secs) {
-	unsigned int retTime = time(0) + secs;  
-	while (time(0) < retTime);      
+	unsigned int retTime = time(0) + secs;
+	while (time(0) < retTime);
 }
 
 void makeMap()
@@ -104,20 +121,20 @@ void makeMap()
 	for (x = 0; x < LAB_X; x++)
 	{
 		brainMap[0][x] = '#';
-		brainMap[LAB_Y-1][x] = '#';
+		brainMap[LAB_Y - 1][x] = '#';
 	}
-	
+
 	for (y = 0; y < LAB_Y; y++)
 	{
 		brainMap[y][0] = '#';
-		brainMap[y][LAB_X-1] = '#';
+		brainMap[y][LAB_X - 1] = '#';
 	}
 }
 
-void nextPath() 
+void nextPath()
 {
 	for (int i = 0; i < LAB_Y; i++) {
-		for (int j = 0; j< LAB_X; j++)
+		for (int j = 0; j < LAB_X; j++)
 		{
 			if (brainMap[i][j] == '.') brainMap[i][j] = ',';
 		}
@@ -180,7 +197,8 @@ void move(char command)
 		exit(0);
 	}
 
-	if (Player.Steps % 1 == 0) { showFrame(); }
+	//if (Player.Steps % 1 == 0 && Player.Steps > 80) { showFrame(); }
+	showFrame();
 }
 
 int getPlayerX()
@@ -221,7 +239,7 @@ void placeMonsterWall(int y, int x)
 	brainMap[y + 1][x] = '#';
 	brainMap[y][x + 1] = '#';
 	brainMap[y - 1][x] = '#';
-	brainMap[y][x-1] = '#';
+	brainMap[y][x - 1] = '#';
 }
 
 void findMonster()				//dis not working
@@ -355,7 +373,7 @@ int checkMoveMonster(int y, int x)			//checks, if desired position to move to is
 {
 	if (lab[y + 1][x] != 'M' && lab[y - 1][x] != 'M' && lab[y][x + 1] != 'M' && lab[y][x - 1] != 'M')
 		return 1;
-	if(brainMap[y][x] != '#')
+	if (brainMap[y][x] != '#')
 		brainMap[y][x] = '$';
 	findMonster();
 	return 0;
@@ -401,57 +419,62 @@ int yOffset(char dir)
 int desiredMove(char dir)
 {
 	if (checkMoveWall(Player.Y + yOffset(dir), Player.X + xOffset(dir)) && checkMoveMonster(Player.Y + yOffset(dir), Player.X + xOffset(dir)))
-		{
-			move(dir);
-			return 1;
-		}
+	{
+		move(dir);
+		return 1;
+	}
 	return 0;
 }
 
 int desiredMoveWall(char dir)
 {
-	if (checkMoveWall(Player.Y + yOffset(dir), Player.X + xOffset(dir)) && checkMoveMonster(Player.Y + yOffset(dir), Player.X + xOffset(dir)) && brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] != ',' )
-		{
-			move(dir);
-			return 1;
-		}
+	if (checkMoveWall(Player.Y + yOffset(dir), Player.X + xOffset(dir)) && checkMoveMonster(Player.Y + yOffset(dir), Player.X + xOffset(dir)) && brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] != ',')
+	{
+		move(dir);
+		return 1;
+	}
 	return 0;
 }
 
 char alternateDirRight(char c)
 {
 	switch (c) {
-			case 'u':
-				return 'r';
-				break;
-			case 'r':
-				return 'd';
-				break;
-			case 'd':
-				return 'l';
-				break;
-			case 'l':
-				return 'u';
-				break;
-			}
+	case 'u':
+		return 'r';
+		break;
+	case 'r':
+		return 'd';
+		break;
+	case 'd':
+		return 'l';
+		break;
+	case 'l':
+		return 'u';
+		break;
+	}
 }
 
 char alternateDirLeft(char c)
 {
 	switch (c) {
-			case 'u':
-				return 'l';
-				break;
-			case 'r':
-				return 'u';
-				break;
-			case 'd':
-				return 'r';
-				break;
-			case 'l':
-				return 'd';
-				break;
-			}
+	case 'u':
+		return 'l';
+		break;
+	case 'r':
+		return 'u';
+		break;
+	case 'd':
+		return 'r';
+		break;
+	case 'l':
+		return 'd';
+		break;
+	}
+}
+
+char oppositeDir(char c)
+{
+	return alternateDirLeft(alternateDirLeft(c));
 }
 
 char bestDir()
@@ -475,8 +498,9 @@ void moveToWall()			//Player is supposed to move to the outer wall closest to hi
 		{
 			move(dir);
 		}*/
-		if(desiredMove(dir))
-			{}
+		if (desiredMove(dir))
+		{
+		}
 		else
 		{
 			dir = alternateDirRight(dir);
@@ -536,18 +560,18 @@ void moveAlongWall()			//player is supposed to move along the wall/dots next to 
 	int startPosX = Player.X;
 	int startPosY = Player.Y;
 	int startSteps = Player.Steps;
-	while(startPosX != Player.X || startPosY != Player.Y || Player.Steps == startSteps)			//checks if actual position is same as starting position or if zero steps were made
+	while (startPosX != Player.X || startPosY != Player.Y || Player.Steps == startSteps)			//checks if actual position is same as starting position or if zero steps were made
 	{
-		if (desiredMove(alternateDirLeft(dir))) 
+		if (desiredMove(alternateDirLeft(dir)))
 		{
 			dir = alternateDirLeft(dir);
 		}
-		else if(desiredMove(dir))
+		else if (desiredMove(dir))
 		{
 		}
 		else
 		{
-		dir = alternateDirRight(dir);
+			dir = alternateDirRight(dir);
 		}
 	}
 	nextPath();
@@ -559,18 +583,18 @@ void moveAlongPath()
 	int startPosX = Player.X;
 	int startPosY = Player.Y;
 	int startSteps = Player.Steps;
-	while(startPosX != Player.X || startPosY != Player.Y || Player.Steps == startSteps)			//checks if actual position is same as starting position or if zero steps were made
+	while (startPosX != Player.X || startPosY != Player.Y || Player.Steps == startSteps)			//checks if actual position is same as starting position or if zero steps were made
 	{
-		if (desiredMoveWall(alternateDirLeft(dir))) 
+		if (desiredMoveWall(alternateDirLeft(dir)))
 		{
 			dir = alternateDirLeft(dir);
 		}
-		else if(desiredMoveWall(dir))
+		else if (desiredMoveWall(dir))
 		{
 		}
 		else
 		{
-		dir = alternateDirRight(dir);
+			dir = alternateDirRight(dir);
 		}
 	}
 	nextPath();
@@ -587,38 +611,39 @@ void avoidWall(int y, int x, char dir)
 	do
 	{
 		prevDis = distance(y, x);
-		if (desiredMove(alternateDirLeft(dir))) 
+		if (desiredMove(alternateDirLeft(dir)))
 		{
 			dir = alternateDirLeft(dir);
 		}
-		else if(desiredMove(dir))
+		else if (desiredMove(dir))
 		{
 		}
 		else
 		{
-		dir = alternateDirRight(dir);
+			dir = alternateDirRight(dir);
 		}
 	} while (prevDis < distance(y, x));
 	dir = findDirection();
 	do
 	{
 		prevDis = distance(y, x);
-		if (desiredMove(alternateDirLeft(dir))) 
+		if (desiredMove(alternateDirLeft(dir)))
 		{
 			dir = alternateDirLeft(dir);
 		}
-		else if(desiredMove(dir))
+		else if (desiredMove(dir))
 		{
 		}
 		else
 		{
-		dir = alternateDirRight(dir);
+			dir = alternateDirRight(dir);
 		}
 	} while (prevDis > distance(y, x));
 }
 
 void moveTo(int y, int x)
 {
+
 	char dir;
 	int b = 1, c = 1;
 
@@ -662,12 +687,119 @@ void moveTo(int y, int x)
 	nextPath();
 }
 
+void clearNode()
+{
+	for (int i = 0; i <= LAB_Y - 1; i++)
+	{
+		for (int j = 0; j <= LAB_X - 1; j++)
+		{
+			map[i][j].visited = 0;
+			map[i][j].distance = -1;
+			map[i][j].parent = 'N';
+		}
+	}
+}
+
+void aStar(int x, int y)
+{
+	clearNode();
+	int dis = 0;
+	char dir;
+	map[Player.Y][Player.X].distance = 0;
+	map[Player.Y][Player.X].visited = 1;
+
+
+	while (dis < 5000)
+	{
+		for (int i = 1; i <= LAB_Y - 2; i++)
+		{
+			for (int j = 1; j <= LAB_X - 2; j++)
+			{
+				if (map[i][j].distance == dis)
+				{
+					dir = 'u';
+					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
+					{
+						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
+						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
+						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
+						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
+							return;
+
+					}
+					dir = 'd';
+					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
+					{
+						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
+						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
+						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
+						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
+							return;
+					}
+					dir = 'l';
+					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
+					{
+						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
+						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
+						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
+						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
+							return;
+					}
+					dir = 'r';
+					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
+					{
+						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
+						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
+						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
+						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
+							return;
+					}
+				}
+			}
+		}
+		dis++;
+	}
+}
+
+void moveTo2(int y, int x)
+{
+	int x2 = x, y2 = y, pos = 0;;
+	char route[5000];
+	aStar(y, x);
+
+	while (x2 != Player.X || y2 != Player.Y)
+	{
+		route[pos] = map[y2][x2].parent;
+		y2 = y2 + yOffset(oppositeDir(route[pos]));
+		x2 = x2 + xOffset(oppositeDir(route[pos]));
+		pos++;
+	}
+	pos--;
+	for (int i = pos; i >= 0; i--)
+	{
+		if (desiredMove(route[i]))
+		{
+		}
+		else
+		{
+			generalDir = route[i];
+			moveAlongWall();
+			moveTo2(y, x);
+			return;
+		}
+	}
+
+
+}
+
 void moveToNextFree()
 {
 	struct Pos free;
 	free = brainRadar();
-	moveTo(free.Y, free.X);
+	moveTo2(free.Y, free.X);
 }
+
+
 
 void main()
 {
@@ -677,7 +809,7 @@ void main()
 	showFrame();
 	moveToWall();
 	moveAlongWall();
-	while(1)
+	while (1)
 	{
 		moveToNextFree();
 		moveAlongPath();
@@ -685,4 +817,5 @@ void main()
 	if (Player.Steps > 160) {
 		showFrame();
 	}
+	moveTo2(1, 1);
 }
