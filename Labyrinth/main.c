@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 
 #define LAB_Y 9
 #define LAB_X 27
@@ -16,8 +17,8 @@ struct Pos
 char lab[LAB_Y][LAB_X] ={{ '#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#', },
      { '#',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
-	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ','G',' ',' ','#', },
-	 { '#','#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#','#','#',' ',' ',' ',' ',' ',' ','#', },
+	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ',' ','#', },
+	 { '#','#',' ',' ','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#','#','#',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ','#','#','#','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#', },
 	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ','#', },
@@ -67,6 +68,19 @@ char startDirection()				//stellt fest, in welchem Quadranten sich der Spieler b
 			return 'u';
 		}
 	}
+	return 0;
+}
+
+char findDirection(){
+	if (brainMap[Player.Y][Player.X + 1] == '#')
+		return 'd';
+	if (brainMap[Player.Y][Player.X - 1] == '#')
+		return 'u';
+	if (brainMap[Player.Y + 1][Player.X] == '#')
+		return 'r';
+	if (brainMap[Player.Y - 1][Player.X] == '#')
+		return 'l';
+	return 0;
 }
 
 void waitFor(unsigned int secs) {
@@ -202,6 +216,14 @@ int checkMoveWall(int y, int x)				//checks, if desired position to move to is a
 	return 0;
 }
 
+void placeMonsterWall(int y, int x)
+{
+	brainMap[y + 1][x] = '#';
+	brainMap[y][x + 1] = '#';
+	brainMap[y - 1][x] = '#';
+	brainMap[y][x-1] = '#';
+}
+
 void findMonster()				//dis not working
 {
 	for (int y = 0; y < LAB_Y; y++) {
@@ -209,79 +231,115 @@ void findMonster()				//dis not working
 			if (brainMap[y][x] == '$') {
 				if (y - 2 >= 0) {
 					if (brainMap[y - 2][x] == '$') {
-						brainMap[y - 1][x] = "M";
-						return;
+						if (brainMap[y - 1][x] == ' ') {
+							brainMap[y - 1][x] = 'M';
+							placeMonsterWall(y - 1, x);
+							return;
+						}
 					}
 				}
 				if (y - 1 >= 0 && x + 1 <= LAB_X) {
 					if (brainMap[y - 1][x + 1] == '$') {
 						if (brainMap[y - 1][x] == '.' || brainMap[y - 1][x] == ',' || brainMap[y - 1][x] == '#')
 						{
-							brainMap[y][x + 1] = 'M';
-							return;
+							if (brainMap[y][x + 1] == ' ') {
+								brainMap[y][x + 1] = 'M';
+								placeMonsterWall(y, x + 1);
+								return;
+							}
 						}
 						else if (brainMap[y][x + 1] == '.' || brainMap[y][x + 1] == ',' || brainMap[y][x + 1] == '#')
 						{
-							brainMap[y - 1][x] = 'M';
-							return;
+							if (brainMap[y - 1][x] == ' ') {
+								brainMap[y - 1][x] = 'M';
+								placeMonsterWall(y - 1, x);
+								return;
+							}
 						}
 					}
 				}
 				if (x + 2 <= LAB_X) {
 					if (brainMap[y][x + 2] == '$') {
-						brainMap[y][x + 1] = 'M';
-						return;
+						if (brainMap[y][x + 1] == ' ') {
+							brainMap[y][x + 1] = 'M';
+							placeMonsterWall(y, x + 1);
+							return;
+						}
 					}
 				}
 				if (y + 1 <= LAB_Y && x + 1 <= LAB_X) {
 					if (brainMap[y + 1][x + 1] == '$') {
 						if (brainMap[y + 1][x] == '.' || brainMap[y + 1][x] == ',' || brainMap[y + 1][x] == '#')
 						{
-							brainMap[y][x + 1] = 'M';
-							return;
+							if (brainMap[y][x + 1] == ' ') {
+								brainMap[y][x + 1] = 'M';
+								placeMonsterWall(y, x + 1);
+								return;
+							}
 						}
 						else if (brainMap[y][x + 1] == '.' || brainMap[y][x + 1] == ',' || brainMap[y][x + 1] == '#')
 						{
-							brainMap[y + 1][x] = 'M';
-							return;
+							if (brainMap[y + 1][x] == ' ') {
+								brainMap[y + 1][x] = 'M';
+								placeMonsterWall(y + 1, x);
+								return;
+							}
 						}
 					}
 				}
 				if (y + 2 <= LAB_Y) {
 					if (brainMap[y + 2][x] == '$') {
-						brainMap[y + 1][x] = 'M';
-						return;
+						if (brainMap[y + 1][x] == ' ') {
+							brainMap[y + 1][x] = 'M';
+							placeMonsterWall(y + 1, x);
+							return;
+						}
 					}
 				}
 				if (y + 1 <= LAB_Y && x - 1 >= 0) {
 					if (brainMap[y + 1][x - 1] == '$') {
 						if (brainMap[y + 1][x] == '.' || brainMap[y + 1][x] == ',' || brainMap[y + 1][x] == '#') {
-							brainMap[y][x - 1] = 'M';
-							return;
+							if (brainMap[y][x - 1] == ' ') {
+								brainMap[y][x - 1] = 'M';
+								placeMonsterWall(y, x - 1);
+								return;
+							}
 						}
 					}
 					else if (brainMap[y][x - 1] == '.' || brainMap[y][x - 1] == ',' || brainMap[y][x - 1] == '#') {
-						brainMap[y + 1][x] = 'M';
-						return;
+						if (brainMap[y + 1][x] == ' ') {
+							brainMap[y + 1][x] = 'M';
+							placeMonsterWall(y + 1, x);
+							return;
+						}
 					}
 				}
 				if (x - 2 >= 0) {
 					if (brainMap[y][x - 2] == '$') {
-						brainMap[y][x - 1] = 'M';
-						return;
+						if (brainMap[y][x - 1] == ' ') {
+							brainMap[y][x - 1] = 'M';
+							placeMonsterWall(y, x - 1);
+							return;
+						}
 					}
 				}
 				if (y - 1 >= 0 && x - 1 >= 0) {
 					if (brainMap[y - 1][x - 1] == '$') {
 						if (brainMap[y][x - 1] == '.' || brainMap[y][x - 1] == ',' || brainMap[y][x - 1] == '#')
 						{
-							brainMap[y - 1][x] = 'M';
-							return;
+							if (brainMap[y - 1][x] == ' ') {
+								brainMap[y - 1][x] = 'M';
+								placeMonsterWall(y - 1, x);
+								return;
+							}
 						}
 						else if (brainMap[y - 1][x] == '.' || brainMap[y - 1][x] == ',' || brainMap[y - 1][x] == '#')
 						{
-							brainMap[y][x - 1] = 'M';
-							return;
+							if (brainMap[y][x - 1] == ' ') {
+								brainMap[y][x - 1] = 'M';
+								placeMonsterWall(y, x - 1);
+								return;
+							}
 						}
 					}
 				}
@@ -297,7 +355,8 @@ int checkMoveMonster(int y, int x)			//checks, if desired position to move to is
 {
 	if (lab[y + 1][x] != 'M' && lab[y - 1][x] != 'M' && lab[y][x + 1] != 'M' && lab[y][x - 1] != 'M')
 		return 1;
-	brainMap[y][x] = '$';
+	if(brainMap[y][x] != '#')
+		brainMap[y][x] = '$';
 	findMonster();
 	return 0;
 }
@@ -438,7 +497,7 @@ int clamp(int var, int min, int max) {
 
 float distance(int y, int x)
 {
-	return sqrt(pow(Player.X - x, 2) + pow(Player.Y - y), 2);
+	return sqrt(pow(Player.X - x, 2) + pow(Player.Y - y, 2));
 }
 
 struct Pos brainRadar()			//Finds the next empty Place in Brainmap
@@ -519,7 +578,8 @@ void moveAlongPath()
 
 void avoidWall(int y, int x, char dir)
 {
-	dir = alternateDirRight(dir);
+	//dir = alternateDirRight(dir);
+	dir = findDirection();
 	int startPosX = Player.X;
 	int startPosY = Player.Y;
 	int startSteps = Player.Steps;
@@ -539,7 +599,8 @@ void avoidWall(int y, int x, char dir)
 		dir = alternateDirRight(dir);
 		}
 	} while (prevDis < distance(y, x));
-	/*do
+	dir = findDirection();
+	do
 	{
 		prevDis = distance(y, x);
 		if (desiredMove(alternateDirLeft(dir))) 
@@ -553,42 +614,45 @@ void avoidWall(int y, int x, char dir)
 		{
 		dir = alternateDirRight(dir);
 		}
-	} while (prevDis > distance(y, x));*/
+	} while (prevDis > distance(y, x));
 }
 
 void moveTo(int y, int x)
 {
 	char dir;
 	int b = 1, c = 1;
+
 	if (y < Player.Y) { dir = 'u'; }
 	else if (y > Player.Y) { dir = 'd'; }
-	else { b = 0; }
-	
-	while (Player.Y != y && b)
+	//else { b = 0; }
+	while (Player.Y != y)
 	{
 		if (!desiredMove(dir))
 			break;
 	}
 	if (x < Player.X) { dir = 'l'; }
 	else if (x > Player.X) { dir = 'r'; }
-	else { b = 0; }
-	while (Player.X != x && b)
+	//else { b = 0; }
+	while (Player.X != x)
 	{
 		if (!desiredMove(dir))
 			break;
 	}
-	while(Player.X != x || Player.Y != y)
+	while (Player.X != x || Player.Y != y)
 	{
 		avoidWall(y, x, dir);
-		while (Player.Y != y && b)
+		if (y < Player.Y) { dir = 'u'; }
+		else if (y > Player.Y) { dir = 'd'; }
+		//else { b = 0; }
+		while (Player.Y != y)
 		{
 			if (!desiredMove(dir))
-			break;
+				break;
 		}
 		if (x < Player.X) { dir = 'l'; }
 		else if (x > Player.X) { dir = 'r'; }
-		else { b = 0; }
-		while (Player.X != x && b)
+		//else { b = 0; }
+		while (Player.X != x)
 		{
 			if (!desiredMove(dir))
 				break;
@@ -596,7 +660,6 @@ void moveTo(int y, int x)
 	}
 
 	nextPath();
-
 }
 
 void moveToNextFree()
@@ -619,7 +682,7 @@ void main()
 		moveToNextFree();
 		moveAlongPath();
 	}
-	
-	showFrame();
-	
+	if (Player.Steps > 160) {
+		showFrame();
+	}
 }
