@@ -1,16 +1,17 @@
-﻿// TODO 
-// - Start neues Pathfinding
-// - MoveAlongPath �berarbeiten
-// - evtl. abgeschlossen R�ume (wenn aStar keine Route)
-
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <time.h>
 #include <math.h>
+#include <Windows.h>
+#include <errno.h> 
+#include <conio.h>
 
-#define LAB_Y 9
-#define LAB_X 27
-#define START_POS_X 24
-#define START_POS_Y	3
+#define LAB_Y 30 //50 //9
+#define LAB_X 35 //60 //27
+#define START_POS_X 1
+#define START_POS_Y	1
+#define FRAMES 1
+#define STARTFRAME 0
+#define MILLIS 0
 
 struct Pos
 {
@@ -26,20 +27,71 @@ struct Node
 	int distance;
 };
 
-char lab[LAB_Y][LAB_X] = { { '#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#', },
-	 { '#',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
-	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ',' ','#', },
-	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ',' ','#', },
-	 { '#','#',' ',' ','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#','#','#',' ',' ',' ',' ',' ',' ','#', },
-	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#', },
-	 { '#',' ',' ','#','#','#','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#', },
-	 { '#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ','#', },
-	 { '#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#', } };
+char lab[LAB_Y][LAB_X] = {
+{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'},
+{'#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','M',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#'},
+{'#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#'},
+{'#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#'},
+{'#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#'},
+{'#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#'},
+{'#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#'},
+{'#',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#'},
+{'#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#'},
+{'#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#'},
+{'#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#'},
+{'#',' ','#',' ','#','M','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#','G','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#'},
+{'#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#'},
+{'#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#'},
+{'#',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#'},
+{'#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#'},
+{'#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#',' ',' ',' ',' ',' ','#',' ','#'},
+{'#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#',' ','#','#','#',' ','#',' ','#'},
+{'#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#',' ','#','M','#',' ','#',' ','#'},
+{'#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#',' ','#',' ',' ',' ','#',' ','#'},
+{'#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#',' ','#','#','#','#','#',' ','#'},
+{'#',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#','#','#','#','#','#','#',' ','#'},
+{'#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#'},
+{'#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#'}
+};
 
+char end[25][43] = {
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ','G','G','G','G','G','G','G','G','G','G','G','G','G',' ',' ',' ',' ',' ',' ',' ',' ','G','G','G','G','G','G','G','G','G','G','G','G','G','\n' },
+{ ' ',' ',' ',' ',' ','G','G','G',':',':',':',':',':',':',':',':',':',':',':',':','G',' ',' ',' ',' ',' ','G','G','G',':',':',':',':',':',':',':',':',':',':',':',':','G','\n' },
+{ ' ',' ',' ','G','G',':',':',':',':',':',':',':',':',':',':',':',':',':',':',':','G',' ',' ',' ','G','G',':',':',':',':',':',':',':',':',':',':',':',':',':',':',':','G','\n' },
+{ ' ',' ','G',':',':',':',':',':','G','G','G','G','G','G','G','G',':',':',':',':','G',' ',' ','G',':',':',':',':',':','G','G','G','G','G','G','G','G',':',':',':',':','G','\n' },
+{ ' ','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ','G','G','G','G','G','G',' ','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ','G','G','G','G','G','G','\n' },
+{ 'G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ 'G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ 'G',':',':',':',':',':','G',' ',' ',' ',' ','G','G','G','G','G','G','G','G','G','G','G',':',':',':',':',':','G',' ',' ',' ',' ','G','G','G','G','G','G','G','G','G','G','\n' },
+{ 'G',':',':',':',':',':','G',' ',' ',' ',' ','G',':',':',':',':',':',':',':',':','G','G',':',':',':',':',':','G',' ',' ',' ',' ','G',':',':',':',':',':',':',':',':','G','\n' },
+{ 'G',':',':',':',':',':','G',' ',' ',' ',' ','G','G','G','G','G',':',':',':',':','G','G',':',':',':',':',':','G',' ',' ',' ',' ','G','G','G','G','G',':',':',':',':','G','\n' },
+{ 'G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ',' ','G',':',':',':',':','G','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ',' ','G',':',':',':',':','G','\n' },
+{ ' ','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ','G',':',':',':',':','G',' ','G',':',':',':',':',':','G',' ',' ',' ',' ',' ',' ',' ','G',':',':',':',':','G','\n' },
+{ ' ',' ','G',':',':',':',':',':','G','G','G','G','G','G','G','G',':',':',':',':','G',' ',' ','G',':',':',':',':',':','G','G','G','G','G','G','G','G',':',':',':',':','G','\n' },
+{ ' ',' ',' ','G','G',':',':',':',':',':',':',':',':',':',':',':',':',':',':',':','G',' ',' ',' ','G','G',':',':',':',':',':',':',':',':',':',':',':',':',':',':',':','G','\n' },
+{ ' ',' ',' ',' ',' ','G','G','G',':',':',':',':',':',':','G','G','G',':',':',':','G',' ',' ',' ',' ',' ','G','G','G',':',':',':',':',':',':','G','G','G',':',':',':','G','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ','G','G','G','G','G','G',' ',' ',' ','G','G','G','G',' ',' ',' ',' ',' ',' ',' ',' ','G','G','G','G','G','G',' ',' ',' ','G','G','G','G','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+{ ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','\n' },
+};
 
 char brainMap[LAB_Y][LAB_X];
 char brain[LAB_Y][LAB_X];
 char generalDir;
+char directions[4] = { 'u','l','d','r'};
 struct Pos Player;
 struct Node map[LAB_Y][LAB_X];
 
@@ -89,20 +141,45 @@ char startDirection()				//stellt fest, in welchem Quadranten sich der Spieler b
 }
 
 char findDirection() {
-	if (brainMap[Player.Y][Player.X + 1] == '#')
-		return 'd';
-	if (brainMap[Player.Y][Player.X - 1] == '#')
-		return 'u';
-	if (brainMap[Player.Y + 1][Player.X] == '#')
-		return 'r';
-	if (brainMap[Player.Y - 1][Player.X] == '#')
-		return 'l';
-	return 0;
+	char dir;
+	for(int i = 0; i < 4; i++)
+	{
+		dir = directions[i];
+		if (brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '#' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '$')
+		return dir;
+	}
+	return 'u';
 }
 
-void waitFor(unsigned int secs) {
-	unsigned int retTime = time(0) + secs;
-	while (time(0) < retTime);
+char findDirectionPath() {
+	
+	char dir;
+	for(int i = 0; i < 4; i++)
+	{
+		dir = directions[i];
+		if (brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '#' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == ',' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '$')
+		return dir;
+	}
+	return 'u';
+	/*dir = 'd';
+	if (brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '#' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == ',' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '$')
+		return dir;
+	dir = 'u';
+	if (brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '#' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == ',' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '$')
+		return dir;
+	dir = 'l';
+	if (brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '#' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == ',' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '$')
+		return dir;
+	dir = 'r';
+	if (brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '#' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == ',' || brainMap[Player.Y + yOffset(dir)][Player.X + xOffset(dir)] == '$')
+		return dir;
+	return 'u';*/	
+}
+
+void waitFor(long msec) {
+	Sleep(50);
+	//unsigned int retTime = time(0) + secs;
+	//while (time(0) < retTime);
 }
 
 void makeMap()
@@ -144,7 +221,7 @@ void nextPath()
 void showFrame()
 {
 	system("cls");
-	printf("\n\nLab-View: \n\n");
+	/*printf("\n\nLab-View: \n\n");
 	for (int i = 0; i < LAB_Y; i++)
 	{
 		for (int j = 0; j < LAB_X; j++)
@@ -152,18 +229,44 @@ void showFrame()
 			printf("%c", lab[i][j]);
 		}
 		printf("\n");
-	}
+	}*/
 	printf("\n\nBrain-Map-View: \n\n");
 	for (int i = 0; i < LAB_Y; i++)
 	{
 		for (int j = 0; j < LAB_X; j++)
 		{
-			printf("%c", brainMap[i][j]);
+			if(brainMap[i][j] == 'X'){
+			printf("\033[35m\033[1m%c\033[0m\033[0m\033[40m", brainMap[i][j]);
+			}
+			else if(brainMap[i][j] == 'f'){
+			printf("\033[0;32m\033[1m%c\033[0m", brainMap[i][j]);
+			}
+			else if(brainMap[i][j] == 'G'){
+			printf("\033[0;33m\033[1m%c\033[0m", brainMap[i][j]);
+			}
+			else if(brainMap[i][j] == '#'){
+			printf("\033[46m\033[30m%c\033[0m", brainMap[i][j]);
+			}
+			else if (brainMap[i][j] == 'M') {
+				printf("\033[41m%c\033[40m", brainMap[i][j]);
+			}
+			else if(brainMap[i][j] == ' ')
+				if (lab[i][j] == '#' || lab[i][j] == 'M') {
+					printf("%c", lab[i][j]);
+				}else if (lab[i][j] == 'G') {
+					printf("\033[0;33m\033[1m%c\033[0m", lab[i][j]);
+				}
+				else {
+					printf("%c", brainMap[i][j]);
+				}
+			else {
+				printf("%c", brainMap[i][j]);
+			}
 		}
 		printf("\n");
 	}
 	printf("\n\n\nSteps: %d \nGeneral Dir: %c \nPlayerX: %d \nPlayerY: %d", Player.Steps, generalDir, Player.X, Player.Y);
-	waitFor(1);
+	waitFor(MILLIS);
 }
 
 void move(char command)
@@ -194,36 +297,19 @@ void move(char command)
 	}
 	else
 	{
+		showFrame();
+		char g = 'g';
+		printf("\n\n\n\n\n\n\n\n\n\n");
+		for (int i = 0; i < 25; i++) {
+			for (int j = 0; j < 43; j++) {
+				printf("%c", end[i][j]);
+			}
+		}
 		exit(0);
 	}
-
-	//if (Player.Steps % 1 == 0 && Player.Steps > 80) { showFrame(); }
-	showFrame();
-}
-
-int getPlayerX()
-{
-	return Player.X;
-}
-
-int getPlayerY()
-{
-	return Player.Y;
-}
-
-void setPlayerX(int x)
-{
-	Player.X = x;
-}
-
-void setPlayerY(int y)
-{
-	Player.Y = y;
-}
-
-char getElement(int y, int x)
-{
-	return (brainMap[y][x]);
+	if (Player.Steps % FRAMES == 0 && Player.Steps > STARTFRAME)
+		showFrame();
+	//showFrame();
 }
 
 int checkMoveWall(int y, int x)				//checks, if desired position to move to is a wall
@@ -556,7 +642,7 @@ struct Pos brainRadar()			//Finds the next empty Place in Brainmap
 
 void moveAlongWall()			//player is supposed to move along the wall/dots next to him
 {
-	char dir = alternateDirRight(generalDir);
+	char dir = findDirection();
 	int startPosX = Player.X;
 	int startPosY = Player.Y;
 	int startSteps = Player.Steps;
@@ -579,23 +665,28 @@ void moveAlongWall()			//player is supposed to move along the wall/dots next to 
 
 void moveAlongPath()
 {
-	char dir = alternateDirRight(bestDir());
+	char dir = findDirectionPath();
 	int startPosX = Player.X;
 	int startPosY = Player.Y;
 	int startSteps = Player.Steps;
-	while (startPosX != Player.X || startPosY != Player.Y || Player.Steps == startSteps)			//checks if actual position is same as starting position or if zero steps were made
+	int computing = 0;
+	while ((startPosX != Player.X || startPosY != Player.Y || Player.Steps == startSteps) && computing < 10)			//checks if actual position is same as starting position or if zero steps were made
 	{
 		if (desiredMoveWall(alternateDirLeft(dir)))
 		{
 			dir = alternateDirLeft(dir);
+			computing = 0;
 		}
 		else if (desiredMoveWall(dir))
 		{
+			computing = 0;
 		}
 		else
 		{
 			dir = alternateDirRight(dir);
 		}
+		computing++;
+		
 	}
 	nextPath();
 }
@@ -700,11 +791,12 @@ void clearNode()
 	}
 }
 
-void aStar(int x, int y)
+struct Pos aStar(int mode)
 {
 	clearNode();
 	int dis = 0;
 	char dir;
+	struct Pos a;
 	map[Player.Y][Player.X].distance = 0;
 	map[Player.Y][Player.X].visited = 1;
 
@@ -717,42 +809,21 @@ void aStar(int x, int y)
 			{
 				if (map[i][j].distance == dis)
 				{
-					dir = 'u';
-					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
+					
+					for(int k = 0; k < 4; k++)
 					{
-						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
-						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
-						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
-						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
-							return;
-
-					}
-					dir = 'd';
-					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
-					{
-						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
-						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
-						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
-						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
-							return;
-					}
-					dir = 'l';
-					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
-					{
-						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
-						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
-						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
-						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
-							return;
-					}
-					dir = 'r';
-					if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
-					{
-						map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
-						map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
-						map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
-						if (i + yOffset(dir) == y && j + xOffset(dir) == x)
-							return;
+						dir = directions[k];
+						if (brainMap[i + yOffset(dir)][j + xOffset(dir)] != '#' && brainMap[i + yOffset(dir)][j + xOffset(dir)] != '$' && map[i + yOffset(dir)][j + xOffset(dir)].visited != 1)
+						{
+							map[i + yOffset(dir)][j + xOffset(dir)].visited = 1;
+							map[i + yOffset(dir)][j + xOffset(dir)].distance = (dis + 1);
+							map[i + yOffset(dir)][j + xOffset(dir)].parent = dir;
+							if (mode && brainMap[i + yOffset(dir)][j + xOffset(dir)] == ' ') {
+								a.X = j + xOffset(dir);
+								a.Y = i + yOffset(dir);
+								return a;
+							}
+						}
 					}
 				}
 			}
@@ -761,11 +832,17 @@ void aStar(int x, int y)
 	}
 }
 
-void moveTo2(int y, int x)
+int moveTo2(int y, int x)
 {
-	int x2 = x, y2 = y, pos = 0;;
+	int x2 = x, y2 = y, pos = 0;
 	char route[5000];
-	aStar(y, x);
+	aStar(0);
+
+	if(map[y][x].parent == 'N')
+	{
+		brainMap[y][x] = '#';
+		return 1;
+	}
 
 	while (x2 != Player.X || y2 != Player.Y)
 	{
@@ -785,37 +862,68 @@ void moveTo2(int y, int x)
 			generalDir = route[i];
 			moveAlongWall();
 			moveTo2(y, x);
-			return;
+			return 0;
 		}
 	}
+	nextPath();
+	return 0;
 
 
 }
 
-void moveToNextFree()
+int moveToNextFree()
 {
 	struct Pos free;
-	free = brainRadar();
-	moveTo2(free.Y, free.X);
+	free = aStar(1);
+	int x2 = free.X, y2 = free.Y, pos = 0;
+	char route[5000];
+	brainMap[free.Y][free.X] = 'f';
+
+	if(map[free.Y][free.X].parent == 'N')
+	{
+		brainMap[free.Y][free.X] = '#';
+		return 1;
+	}
+
+	while (x2 != Player.X || y2 != Player.Y)
+	{
+		route[pos] = map[y2][x2].parent;
+		y2 = y2 + yOffset(oppositeDir(route[pos]));
+		x2 = x2 + xOffset(oppositeDir(route[pos]));
+		pos++;
+	}
+	pos--;
+	for (int i = pos; i >= 0; i--)
+	{
+		if (desiredMove(route[i]))
+		{
+		}
+		else
+		{
+			generalDir = route[i];
+			moveAlongWall();
+			moveToNextFree();
+			return 0;
+		}
+	}
+	nextPath();
+	return 0;
 }
-
-
 
 void main()
 {
 	struct Pos test;
+	int a;
 	makeMap(lab);
 	startGame();
 	showFrame();
-	moveToWall();
+	while (desiredMove('u'))
+	{}
 	moveAlongWall();
 	while (1)
 	{
-		moveToNextFree();
+		if (moveToNextFree())
+			continue;
 		moveAlongPath();
 	}
-	if (Player.Steps > 160) {
-		showFrame();
-	}
-	moveTo2(1, 1);
 }
